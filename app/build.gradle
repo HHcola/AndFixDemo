@@ -1,0 +1,75 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 21
+    buildToolsVersion "22.0.1"
+    defaultConfig {
+        applicationId "com.dexfileformat.dexfileformat"
+        minSdkVersion 9
+        targetSdkVersion 21
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+
+    defaultConfig {
+        externalNativeBuild {
+            cmake {
+                targets "andfix"
+                arguments '-DBUILD_TESTING=OFF', "-DANDROID_TOOLCHAIN=gcc", '-DANDROID_STL=gnustl_static'
+                cFlags "-DTEST_C_FLAG1", "-DTEST_C_FLAG2"
+                cppFlags  "-std=c++11", "-fpermissive", "-DDEBUG", "-O0"
+                abiFilters 'x86', 'x86_64', 'armeabi', 'armeabi-v7a', 'arm64-v8a'
+            }
+        }
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+}
+
+task clearJar(type: Delete) {
+    delete 'libs/refile.jar'
+}
+
+task dexFile(type:org.gradle.api.tasks.bundling.Jar) {
+    //指定生成的jar名
+    baseName 'refile'
+    //从哪里打包class文件
+    from('build/intermediates/classes/release/')
+    //去掉不需要打包的目录和文件
+    exclude('test/', 'R.class')
+    //去掉R$和配置只有开头的文件
+    exclude{ it.name.startsWith('R$');}
+    exclude{ it.name.startsWith('BuildConfig.class');}
+    exclude{ it.name.startsWith('R.class');}
+
+    include('com/dexfileformat/dexfileformat/ReplaceFile.class')
+    //打包到jar后的目录结构
+    into('/')
+}
+
+dexFile.dependsOn(clearJar, build)
+
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    testCompile 'junit:junit:4.12'
+}
